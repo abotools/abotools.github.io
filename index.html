@@ -7,22 +7,34 @@
     <title>Static Template</title>
   </head>
   <body>
+    <button onclick="diff()">
+      DIFF!
+    </button>
     <div style="display: flex; flex-direction: row;">
       <div>
-        <label for="day1">Anterior</label>
-        <textarea id="day1"></textarea>
-        <div id="result1"></div>
+        <label for="prev-text" style="display: block;">Anterior</label>
+        <textarea id="prev-text" rows="15" cols="60"></textarea>
       </div>
       <div>
-        <label for="day2">Atual</label>
-        <textarea id="day2"></textarea>
-        <div id="result2"></div>
+        <label for="cur-text" style="display: block;">Atual</label>
+        <textarea id="cur-text" rows="15" cols="60"></textarea>
       </div>
     </div>
-    <button onclick="diff()">
-      DO IT!
-    </button>
-    <div id="diff"></div>
+
+    <div style="display: flex; flex-direction: row; margin-top: 24px;">
+      <div>
+        <label>PREVIOUS</label>
+        <div id="prev-result"></div>
+      </div>
+      <div style="margin-left: 16px;">
+        <label>CURRENT</label>
+        <div id="cur-result"></div>
+      </div>
+      <div style="margin-left: 16px;">
+        <label>DIFF</label>
+        <div id="diff-result"></div>
+      </div>
+    </div>
   </body>
   <script>
     function processTable(table) {
@@ -31,36 +43,56 @@
           const cells = l.split("|").map((e) => e.trim());
           const curGS = cells[3].split("B")[0];
           acc[cells[0]] = curGS;
-          acc.guild += parseFloat(curGS);
+          acc.TOTAL += parseFloat(curGS);
           return acc;
         },
-        { guild: 0.0 }
+        { TOTAL: 0.0 }
       );
     }
+    const makeRow = (name, gs) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${name}</td><td>${parseFloat(gs).toFixed(2)}</td>`;
+      return tr;
+    };
+
     function formatNameGS(gsMap) {
-      return Object.entries(gsMap)
-        .map(([name, gs]) => `${name} - ${parseFloat(gs).toFixed(2)}`)
-        .join("\n");
+      const table = document.createElement("table");
+      table.innerHTML = `
+      <thead>
+          <tr>
+            <th>Player</th>
+            <th>GS</th>
+          </tr>
+        </thead>`;
+      const tbody = document.createElement("tbody");
+      Object.entries(gsMap)
+        .map(([name, gs]) => makeRow(name, gs))
+        .forEach((ele) => tbody.appendChild(ele));
+      table.appendChild(tbody);
+      return table;
     }
     function diff() {
-      const table1 = document.getElementById("day1").value;
-      const table2 = document.getElementById("day2").value;
+      const table1 = document.getElementById("prev-text").value;
+      const table2 = document.getElementById("cur-text").value;
       const gsMap1 = processTable(table1);
       const gsMap2 = processTable(table2);
-      document.getElementById("result1").innerText = formatNameGS(gsMap1);
-      document.getElementById("result2").innerText = formatNameGS(gsMap2);
+      document.getElementById("prev-result").appendChild(formatNameGS(gsMap1));
+      document.getElementById("cur-result").appendChild(formatNameGS(gsMap2));
 
       const diffMap = Object.keys(gsMap2).reduce(
         (accDiff, pName) => {
           accDiff[pName] = gsMap2[pName] - gsMap1[pName];
           return accDiff;
         },
-        { guild: 0.0 }
+        { TOTAL: 0.0 }
       );
 
-      console.log(gsMap2.guild - gsMap1.guild);
-
-      document.getElementById("diff").innerText = formatNameGS(diffMap);
+      document.getElementById("diff-result").appendChild(formatNameGS(diffMap));
     }
   </script>
+  <style>
+    table {
+      border: 2px solid black;
+    }
+  </style>
 </html>
