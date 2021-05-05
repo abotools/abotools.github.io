@@ -7,9 +7,33 @@
     <title>Static Template</title>
   </head>
   <body>
-    <button onclick="diff()">
-      DIFF!
-    </button>
+
+
+    <div style="display: flex;">
+      <fieldset>
+        <legend>DIFF</legend>
+        <button onclick="addDiff()">
+          CALC
+        </button>
+      </fieldset>
+
+      <fieldset>
+        <legend>STORAGE</legend>
+        <button onclick="loadFromStorage()">
+          LOAD
+        </button>
+        <button onclick="saveToStorage()">
+          SAVE
+        </button>
+        <button onclick="clearStorage()">
+          CLEAR
+        </button>
+      </fieldset>
+    </div>
+
+
+
+
     <div style="display: flex; flex-direction: row;">
       <div>
         <label for="prev-text" style="display: block;">Anterior</label>
@@ -37,6 +61,32 @@
     </div>
   </body>
   <script>
+    let saved = []
+    function loadFromStorage() {
+      const value = localStorage.getItem('saved')
+      saved = value && JSON.parse(value);
+
+      refreshTables();
+    }
+    function saveToStorage() {
+      localStorage.setItem('saved', JSON.stringify(saved));
+    }
+    function clearStorage() {
+      saved.pop();
+      localStorage.setItem('saved', JSON.stringify(saved));
+      refreshTables();
+    }
+
+    function refreshTables() {
+      document.getElementById("prev-result").innerHTML = "";
+      document.getElementById("cur-result").innerHTML = "";
+      document.getElementById("diff-result").innerHTML = "";
+      saved.forEach((day) => {
+        document.getElementById("prev-result").appendChild(formatNameGS(day.previous.processed));
+        document.getElementById("cur-result").appendChild(formatNameGS(day.current.processed));
+        document.getElementById("diff-result").appendChild(formatNameGS(day.diff.processed));
+      })
+    }
     function processTable(table) {
       return table.split("\n").reduce(
         (acc, l) => {
@@ -71,23 +121,45 @@
       table.appendChild(tbody);
       return table;
     }
-    function diff() {
-      const table1 = document.getElementById("prev-text").value;
-      const table2 = document.getElementById("cur-text").value;
-      const gsMap1 = processTable(table1);
-      const gsMap2 = processTable(table2);
-      document.getElementById("prev-result").appendChild(formatNameGS(gsMap1));
-      document.getElementById("cur-result").appendChild(formatNameGS(gsMap2));
-
-      const diffMap = Object.keys(gsMap2).reduce(
+    function diff(prevGsMap, currentGsMap) {
+      const diffMap = Object.keys(currentGsMap).reduce(
         (accDiff, pName) => {
-          accDiff[pName] = gsMap2[pName] - gsMap1[pName];
+          accDiff[pName] = currentGsMap[pName] - prevGsMap[pName];
           return accDiff;
         },
         { TOTAL: 0.0 }
       );
-
-      document.getElementById("diff-result").appendChild(formatNameGS(diffMap));
+      return {
+        prevGsMap,
+        currentGsMap,
+        diffMap,
+      }
+    }
+    function addDiff() {
+      const table1 = document.getElementById("prev-text").value;
+      const table2 = document.getElementById("cur-text").value;
+      const prevTable = processTable(table1)
+      const currentTable = processTable(table2)
+      const {
+        prevGsMap,
+        currentGsMap,
+        diffMap,
+      } = diff(prevTable, currentTable)
+      const newItem = {
+        previous: {
+          original: table1,
+          processed: prevTable,
+        },
+        current: {
+          original: table2,
+          processed: currentTable,
+        },
+        diff: {
+          processed: diffMap,
+        }
+      }
+      saved.push(newItem)
+      refreshTables();
     }
   </script>
   <style>
